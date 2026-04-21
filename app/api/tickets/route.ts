@@ -57,23 +57,34 @@ export async function POST(request: NextRequest) {
     const telefonoVecino = formData.get('telefonoVecino') as string | null
     const fotoFile = formData.get('foto') as File | null
 
+    console.log('[POST /api/tickets] campos recibidos:', { titulo, categoria, zona, vecino, emailVecino, hasFoto: !!(fotoFile && fotoFile.size > 0) })
+
     if (!titulo || !descripcion || !categoria || !zona || !vecino || !emailVecino) {
       return Response.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
     }
 
     let fotoPath: string | null = null
     if (fotoFile && fotoFile.size > 0) {
-      const bytes = await fotoFile.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      const ext = fotoFile.name.split('.').pop() || 'jpg'
-      const filename = `ticket-${Date.now()}.${ext}`
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-      await writeFile(path.join(uploadDir, filename), buffer)
-      fotoPath = `/uploads/${filename}`
+      try {
+        const { mkdir } = await import('fs/promises')
+        const bytes = await fotoFile.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        const ext = fotoFile.name.split('.').pop() || 'jpg'
+        const filename = `ticket-${Date.now()}.${ext}`
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+        await mkdir(uploadDir, { recursive: true })
+        await writeFile(path.join(uploadDir, filename), buffer)
+        fotoPath = `/uploads/${filename}`
+        console.log('[POST /api/tickets] foto guardada:', fotoPath)
+      } catch (fotoErr) {
+        console.error('[POST /api/tickets] No se pudo guardar foto (ignorado):', fotoErr)
+      }
     }
 
+    console.log('[POST /api/tickets] calculando numero...')
     const maxNumero = await prisma.ticket.aggregate({ _max: { numero: true } })
     const numero = (maxNumero._max.numero ?? 0) + 1
+    console.log('[POST /api/tickets] numero asignado:', numero)
 
     const ticket = await prisma.ticket.create({
       data: {
@@ -93,11 +104,15 @@ export async function POST(request: NextRequest) {
       include: { comentarios: true, afectados: true },
     })
 
+    console.log('[POST /api/tickets] ticket creado:', ticket.id, 'numero:', ticket.numero)
     sendTicketEmail(ticket).catch(console.error)
 
     return Response.json(ticket, { status: 201 })
   } catch (error) {
-    console.error(error)
-    return Response.json({ error: 'Error al crear ticket' }, { status: 500 })
+    console.error('[POST /api/tickets] ERROR:', error)
+    return Response.json({
+      error: 'Error al crear ticket',
+      detail: error instanceof Error ? error.message : String(error),
+    }, { status: 500 })
   }
 }

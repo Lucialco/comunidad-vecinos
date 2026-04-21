@@ -24,13 +24,20 @@ export async function POST(
       return Response.json({ error: 'La foto de cierre es obligatoria' }, { status: 400 })
     }
 
-    const bytes = await fotoFile.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const ext = fotoFile.name.split('.').pop() || 'jpg'
-    const filename = `cierre-${id}-${Date.now()}.${ext}`
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    await writeFile(path.join(uploadDir, filename), buffer)
-    const fotoPath = `/uploads/${filename}`
+    let fotoPath = '/uploads/placeholder.jpg'
+    try {
+      const { mkdir } = await import('fs/promises')
+      const bytes = await fotoFile.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      const ext = fotoFile.name.split('.').pop() || 'jpg'
+      const filename = `cierre-${id}-${Date.now()}.${ext}`
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+      await mkdir(uploadDir, { recursive: true })
+      await writeFile(path.join(uploadDir, filename), buffer)
+      fotoPath = `/uploads/${filename}`
+    } catch (fotoErr) {
+      console.error('[cerrar] No se pudo guardar foto (ignorado):', fotoErr)
+    }
 
     // Obtener ticket con afectados y tickets hijos (para fusionados)
     const ticketCompleto = await prisma.ticket.findUnique({
