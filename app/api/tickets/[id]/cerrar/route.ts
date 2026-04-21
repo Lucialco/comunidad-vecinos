@@ -51,7 +51,7 @@ export async function POST(
     })
 
     // Vecinos de tickets fusionados (hijos)
-    const vecinosHijos = (ticketCompleto?.ticketsHijos ?? []).flatMap((hijo) => [
+    const vecinosHijos = (ticketCompleto?.ticketsHijos ?? []).flatMap((hijo: { vecino: string; emailVecino: string; telefonoVecino?: string | null; afectados: { nombre: string; email: string; telefono?: string | null }[] }) => [
       { nombre: hijo.vecino, email: hijo.emailVecino, telefono: hijo.telefonoVecino },
       ...hijo.afectados.map((a) => ({ nombre: a.nombre, email: a.email, telefono: a.telefono })),
     ])
