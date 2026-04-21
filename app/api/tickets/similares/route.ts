@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       const terms = palabras
         .toLowerCase()
         .split(' ')
-        .filter((t) => t.length > 2)
+        .filter((t: string) => t.length > 2)
 
       tickets = tickets.filter((t) =>
         terms.some(
