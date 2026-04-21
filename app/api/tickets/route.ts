@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { sendTicketEmail } from '@/lib/email'
 import { writeFile } from 'fs/promises'
 import path from 'path'
+import type { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const desde = searchParams.get('desde')
     const hasta = searchParams.get('hasta')
 
-    const where: Record<string, unknown> = {}
+    const where: Prisma.TicketWhereInput = {}
     if (estado) where.estado = estado
     if (categoria) where.categoria = categoria
     if (prioridad) where.prioridad = prioridad
