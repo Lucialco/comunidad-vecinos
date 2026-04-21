@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendCloseEmail } from '@/lib/email'
-import { writeFile } from 'fs/promises'
-import path from 'path'
+import { put } from '@vercel/blob'
 
 export async function POST(
   request: NextRequest,
@@ -24,19 +23,16 @@ export async function POST(
       return Response.json({ error: 'La foto de cierre es obligatoria' }, { status: 400 })
     }
 
-    let fotoPath = '/uploads/placeholder.jpg'
+    let fotoPath = ''
     try {
-      const { mkdir } = await import('fs/promises')
-      const bytes = await fotoFile.arrayBuffer()
-      const buffer = Buffer.from(bytes)
       const ext = fotoFile.name.split('.').pop() || 'jpg'
       const filename = `cierre-${id}-${Date.now()}.${ext}`
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-      await mkdir(uploadDir, { recursive: true })
-      await writeFile(path.join(uploadDir, filename), buffer)
-      fotoPath = `/uploads/${filename}`
+      const blob = await put(filename, fotoFile, { access: 'public' })
+      fotoPath = blob.url
+      console.log('[cerrar] foto subida a Blob:', fotoPath)
     } catch (fotoErr) {
-      console.error('[cerrar] No se pudo guardar foto (ignorado):', fotoErr)
+      console.error('[cerrar] No se pudo subir foto:', fotoErr)
+      return Response.json({ error: 'No se pudo subir la foto de cierre' }, { status: 500 })
     }
 
     // Obtener ticket con afectados y tickets hijos (para fusionados)

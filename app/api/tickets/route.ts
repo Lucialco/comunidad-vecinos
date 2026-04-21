@@ -1,8 +1,7 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendTicketEmail } from '@/lib/email'
-import { writeFile } from 'fs/promises'
-import path from 'path'
+import { put } from '@vercel/blob'
 import type { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
@@ -66,18 +65,13 @@ export async function POST(request: NextRequest) {
     let fotoPath: string | null = null
     if (fotoFile && fotoFile.size > 0) {
       try {
-        const { mkdir } = await import('fs/promises')
-        const bytes = await fotoFile.arrayBuffer()
-        const buffer = Buffer.from(bytes)
         const ext = fotoFile.name.split('.').pop() || 'jpg'
         const filename = `ticket-${Date.now()}.${ext}`
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-        await mkdir(uploadDir, { recursive: true })
-        await writeFile(path.join(uploadDir, filename), buffer)
-        fotoPath = `/uploads/${filename}`
-        console.log('[POST /api/tickets] foto guardada:', fotoPath)
+        const blob = await put(filename, fotoFile, { access: 'public' })
+        fotoPath = blob.url
+        console.log('[POST /api/tickets] foto subida a Blob:', fotoPath)
       } catch (fotoErr) {
-        console.error('[POST /api/tickets] No se pudo guardar foto (ignorado):', fotoErr)
+        console.error('[POST /api/tickets] No se pudo subir foto (ignorado):', fotoErr)
       }
     }
 
