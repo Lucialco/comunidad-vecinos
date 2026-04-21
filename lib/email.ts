@@ -153,7 +153,7 @@ export async function sendTicketEmail(ticket: TicketBasico) {
   await enviarEmail(ticket.id, {
     to: ticket.emailVecino,
     destinatarioNombre: ticket.vecino,
-    subject: `Ticket #${ticket.numero} registrado — ${ticket.titulo}`,
+    subject: `[PARCELA 8] 🔔 Nueva incidencia #${ticket.numero} - ${ticket.titulo}`,
     html: `<div style="font-family:sans-serif;max-width:600px">
       <h2 style="color:#1d4ed8">Su incidencia ha sido registrada</h2>
       ${infoRows}
@@ -180,7 +180,7 @@ export async function sendTicketEmail(ticket: TicketBasico) {
 
   await enviarEmail(ticket.id, {
     to: adminEmail,
-    subject: `[NUEVO] Ticket #${ticket.numero} — ${ticket.titulo}`,
+    subject: `[PARCELA 8] 🔔 Nueva incidencia #${ticket.numero} - ${ticket.titulo}`,
     html: `<div style="font-family:sans-serif;max-width:600px">
       <h2 style="color:#1d4ed8">Nuevo ticket de incidencia</h2>
       <p><strong>Vecino:</strong> ${ticket.vecino} &lt;${ticket.emailVecino}&gt;</p>
@@ -196,7 +196,7 @@ export async function sendTicketEmail(ticket: TicketBasico) {
   if (presidenteEmail && presidenteEmail !== adminEmail) {
     await enviarEmail(ticket.id, {
       to: presidenteEmail,
-      subject: `[INFO] Ticket #${ticket.numero} — ${ticket.titulo}`,
+      subject: `[PARCELA 8] 🔔 Nueva incidencia #${ticket.numero} - ${ticket.titulo}`,
       html: `<div style="font-family:sans-serif;max-width:600px">
         <h2 style="color:#1d4ed8">Nuevo ticket en la comunidad</h2>
         <p><strong>Vecino:</strong> ${ticket.vecino}</p>
@@ -246,7 +246,7 @@ export async function sendProgresoEmail(ticket: TicketProgreso) {
     await enviarEmail(ticket.id, {
       to: p.email,
       destinatarioNombre: p.nombre,
-      subject: `Ticket #${ticket.numero} en gestión — ${ticket.titulo}`,
+      subject: `[PARCELA 8] 🔧 Incidencia #${ticket.numero} en progreso - ${ticket.titulo}`,
       html: htmlBody(p.nombre),
     })
     // WhatsApp disponible para el admin (si tiene teléfono)
@@ -262,7 +262,7 @@ export async function sendProgresoEmail(ticket: TicketProgreso) {
   // Email → presidente
   await enviarEmail(ticket.id, {
     to: presidenteEmail,
-    subject: `[EN GESTIÓN] Ticket #${ticket.numero} — ${ticket.titulo}`,
+    subject: `[PARCELA 8] 🔧 Incidencia #${ticket.numero} en progreso - ${ticket.titulo}`,
     html: `<div style="font-family:sans-serif;max-width:600px">
       <h2 style="color:#d97706">Ticket marcado en progreso</h2>
       <p><strong>Ticket:</strong> #${ticket.numero} — ${ticket.titulo}</p>
@@ -318,7 +318,7 @@ export async function sendCloseEmail(ticket: TicketCierre) {
     await enviarEmail(ticket.id, {
       to: p.email,
       destinatarioNombre: p.nombre,
-      subject: `Ticket #${ticket.numero} RESUELTO — ${ticket.titulo}`,
+      subject: `[PARCELA 8] ✅ Incidencia #${ticket.numero} resuelta - ${ticket.titulo}`,
       html: htmlVecino(p.nombre),
     })
     // WhatsApp disponible para el admin
@@ -335,7 +335,7 @@ export async function sendCloseEmail(ticket: TicketCierre) {
   const notifEmails = [...new Set([adminEmail, presidenteEmail].filter(Boolean))]
   await enviarEmail(ticket.id, {
     to: notifEmails.join(','),
-    subject: `[CERRADO] Ticket #${ticket.numero} — ${ticket.titulo}`,
+    subject: `[PARCELA 8] ✅ Incidencia #${ticket.numero} resuelta - ${ticket.titulo}`,
     html: `<div style="font-family:sans-serif;max-width:600px">
       <h2 style="color:#16a34a">Ticket cerrado</h2>
       <p><strong>Ticket:</strong> #${ticket.numero} — ${ticket.titulo}</p>
