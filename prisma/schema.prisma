@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Ticket {
+  id             String   @id @default(cuid())
+  numero         Int      @unique
+  titulo         String
+  descripcion    String
+  categoria      String
+  prioridad      String   @default("Normal")
+  estado         String   @default("Abierto")
+  zona           String
+  piso           String?
+  foto           String?
+  vecino         String
+  emailVecino    String
+  telefonoVecino String?
+  creadoEn              DateTime @default(now())
+  actualizadoEn         DateTime @updatedAt
+  cerradoEn             DateTime?
+  cerradoPor            String?
+  valoracionReparacion   Int?
+  valoracionRapidez      Int?
+  valoracionComunicacion Int?
+  valoracionComentario   String?
+  valoracionFecha        DateTime?
+  comentarios    Comentario[]
+  afectados      Afectado[]
+  comunicaciones Comunicacion[]
+  ticketPadreId  String?
+  ticketPadre    Ticket?  @relation("TicketMerge", fields: [ticketPadreId], references: [id])
+  ticketsHijos   Ticket[] @relation("TicketMerge")
+}
+
+model Comentario {
+  id        String   @id @default(cuid())
+  texto     String
+  autor     String
+  rol       String
+  creadoEn  DateTime @default(now())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+}
+
+model Afectado {
+  id        String   @id @default(cuid())
+  nombre    String
+  email     String
+  telefono  String?
+  creadoEn  DateTime @default(now())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+}
+
+model Comunicacion {
+  id           String   @id @default(cuid())
+  tipo         String
+  destinatario String
+  asunto       String
+  mensaje      String
+  estado       String   @default("Enviado")
+  creadoEn     DateTime @default(now())
+  ticketId     String
+  ticket       Ticket   @relation(fields: [ticketId], references: [id])
+}
+
+model Usuario {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  nombre    String
+  rol       String
+  creadoEn  DateTime @default(now())
+}
