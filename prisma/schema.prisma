@@ -16,6 +16,8 @@ model Ticket {
   estado         String   @default("Abierto")
   zona           String
   piso           String?
+  calle          String?
+  bloque         String?
   foto           String?
   vecino         String
   emailVecino    String

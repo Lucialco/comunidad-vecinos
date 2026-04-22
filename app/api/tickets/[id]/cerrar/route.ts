@@ -19,20 +19,18 @@ export async function POST(
       return Response.json({ error: 'El comentario de cierre es obligatorio' }, { status: 400 })
     }
 
-    if (!fotoFile || fotoFile.size === 0) {
-      return Response.json({ error: 'La foto de cierre es obligatoria' }, { status: 400 })
-    }
-
     let fotoPath = ''
-    try {
-      const ext = fotoFile.name.split('.').pop() || 'jpg'
-      const filename = `cierre-${id}-${Date.now()}.${ext}`
-      const blob = await put(filename, fotoFile, { access: 'public' })
-      fotoPath = blob.url
-      console.log('[cerrar] foto subida a Blob:', fotoPath)
-    } catch (fotoErr) {
-      console.error('[cerrar] No se pudo subir foto:', fotoErr)
-      return Response.json({ error: 'No se pudo subir la foto de cierre' }, { status: 500 })
+    if (fotoFile && fotoFile.size > 0) {
+      try {
+        const ext = fotoFile.name.split('.').pop() || 'jpg'
+        const filename = `cierre-${id}-${Date.now()}.${ext}`
+        const blob = await put(filename, fotoFile, { access: 'public' })
+        fotoPath = blob.url
+        console.log('[cerrar] foto subida a Blob:', fotoPath)
+      } catch (fotoErr) {
+        console.error('[cerrar] No se pudo subir foto:', fotoErr)
+        return Response.json({ error: 'No se pudo subir la foto de cierre' }, { status: 500 })
+      }
     }
 
     // Obtener ticket con afectados y tickets hijos (para fusionados)

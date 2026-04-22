@@ -15,6 +15,8 @@ type Ticket = {
   estado: string
   zona: string
   piso?: string | null
+  calle?: string | null
+  bloque?: string | null
   foto?: string | null
   vecino: string
   emailVecino: string
@@ -538,7 +540,10 @@ export default function PresidentePage() {
                     <div><span className="text-gray-500">Vecino:</span> <span className="font-medium">{ticketDetalle.vecino}</span></div>
                     <div><span className="text-gray-500">Email:</span> <span className="font-medium break-all">{ticketDetalle.emailVecino}</span></div>
                     <div><span className="text-gray-500">Teléfono:</span> <span className="font-medium">{ticketDetalle.telefonoVecino || '—'}</span></div>
-                    <div><span className="text-gray-500">Zona:</span> <span className="font-medium">{ticketDetalle.zona}{ticketDetalle.piso ? ` · ${ticketDetalle.piso}` : ''}</span></div>
+                    <div><span className="text-gray-500">Zona:</span> <span className="font-medium">{ticketDetalle.zona}</span></div>
+                    {(ticketDetalle.calle || ticketDetalle.bloque || ticketDetalle.piso) && (
+                      <div><span className="text-gray-500">Ubicación:</span> <span className="font-medium">{[ticketDetalle.calle, ticketDetalle.bloque, ticketDetalle.piso].filter(Boolean).join(' · ')}</span></div>
+                    )}
                     <div><span className="text-gray-500">Creado:</span> <span className="font-medium">{new Date(ticketDetalle.creadoEn).toLocaleString('es-ES')}</span></div>
                     {ticketDetalle.cerradoEn && <div><span className="text-gray-500">Cerrado:</span> <span className="font-medium">{new Date(ticketDetalle.cerradoEn).toLocaleString('es-ES')}</span></div>}
                   </div>

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-const CATEGORIAS = ['Ascensor', 'Iluminación', 'Estructura', 'Pintura', 'Limpieza', 'Otros']
+const CATEGORIAS = ['Obra / Pintura', 'Ascensor', 'Iluminación', 'Estructura', 'Limpieza', 'Otros']
 const PRIORIDADES = ['Baja', 'Normal', 'Alta', 'Urgente']
-const ZONAS = ['Portal A', 'Portal B', 'Portal C', 'Jardines', 'Aparcamiento', 'Azotea', 'Sótano', 'Zona común']
+const ZONAS = ['Pasillo', 'Escaleras', 'Jardines', 'Otras zonas']
 
 type TicketSimilar = {
   id: string
@@ -25,6 +25,8 @@ type FormState = {
   categoria: string
   prioridad: string
   zona: string
+  calle: string
+  bloque: string
   piso: string
   titulo: string
   descripcion: string
@@ -39,6 +41,8 @@ export default function Home() {
     categoria: '',
     prioridad: 'Normal',
     zona: '',
+    calle: '',
+    bloque: '',
     piso: '',
     titulo: '',
     descripcion: '',
@@ -109,6 +113,8 @@ export default function Home() {
     fd.append('categoria', form.categoria)
     fd.append('prioridad', form.prioridad)
     fd.append('zona', form.zona)
+    if (form.calle) fd.append('calle', form.calle)
+    if (form.bloque) fd.append('bloque', form.bloque)
     if (form.piso) fd.append('piso', form.piso)
     fd.append('vecino', form.vecino)
     fd.append('emailVecino', form.email)
@@ -122,7 +128,7 @@ export default function Home() {
       setExito({ numero: data.numero })
       setForm({
         vecino: '', email: '', telefono: '', categoria: '', prioridad: 'Normal',
-        zona: '', piso: '', titulo: '', descripcion: '', foto: null,
+        zona: '', calle: '', bloque: '', piso: '', titulo: '', descripcion: '', foto: null,
       })
       setSimilares([])
       setMostrarSimilares(false)
@@ -297,16 +303,48 @@ export default function Home() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-              <input
-                type="tel"
-                name="telefono"
-                value={form.telefono}
-                onChange={handleChange}
-                placeholder="600 000 000"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227] focus:border-transparent"
-              />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <input
+                  type="tel"
+                  name="telefono"
+                  value={form.telefono}
+                  onChange={handleChange}
+                  placeholder="600 000 000"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Calle</label>
+                <input
+                  name="calle"
+                  value={form.calle}
+                  onChange={handleChange}
+                  placeholder="Mayor"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bloque</label>
+                <input
+                  name="bloque"
+                  value={form.bloque}
+                  onChange={handleChange}
+                  placeholder="B"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227] focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Piso</label>
+                <input
+                  name="piso"
+                  value={form.piso}
+                  onChange={handleChange}
+                  placeholder="2ºA"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227] focus:border-transparent"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -342,34 +380,22 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Zona <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="zona"
-                  value={form.zona}
-                  onChange={handleChange}
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227] focus:border-transparent"
-                >
-                  <option value="">Seleccionar zona...</option>
-                  {ZONAS.map((z) => (
-                    <option key={z} value={z}>{z}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Piso / Vivienda</label>
-                <input
-                  name="piso"
-                  value={form.piso}
-                  onChange={handleChange}
-                  placeholder="2ºA"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227] focus:border-transparent"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Zona <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="zona"
+                value={form.zona}
+                onChange={handleChange}
+                required
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227] focus:border-transparent"
+              >
+                <option value="">Seleccionar zona...</option>
+                {ZONAS.map((z) => (
+                  <option key={z} value={z}>{z}</option>
+                ))}
+              </select>
             </div>
 
             <div>

@@ -51,6 +51,8 @@ export async function POST(request: NextRequest) {
     const prioridad = (formData.get('prioridad') as string) || 'Normal'
     const zona = formData.get('zona') as string
     const piso = formData.get('piso') as string | null
+    const calle = formData.get('calle') as string | null
+    const bloque = formData.get('bloque') as string | null
     const vecino = formData.get('vecino') as string
     const emailVecino = formData.get('emailVecino') as string
     const telefonoVecino = formData.get('telefonoVecino') as string | null
@@ -89,6 +91,8 @@ export async function POST(request: NextRequest) {
         prioridad,
         zona,
         piso: piso || null,
+        calle: calle || null,
+        bloque: bloque || null,
         vecino,
         emailVecino,
         telefonoVecino: telefonoVecino || null,

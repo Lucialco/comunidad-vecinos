@@ -15,6 +15,8 @@ type Ticket = {
   estado: string
   zona: string
   piso?: string | null
+  calle?: string | null
+  bloque?: string | null
   foto?: string | null
   vecino: string
   emailVecino: string
@@ -139,12 +141,11 @@ export default function AdminPage() {
   async function cerrarTicket() {
     if (!modalCerrar) return
     if (!comentarioCierre.trim()) { setErrorCierre('El comentario es obligatorio'); return }
-    if (!fotoCierre) { setErrorCierre('La foto es obligatoria'); return }
     setCerrando(true); setErrorCierre('')
     const fd = new FormData()
     fd.append('comentario', comentarioCierre)
     fd.append('cerradoPor', 'Administrador')
-    fd.append('foto', fotoCierre)
+    if (fotoCierre) fd.append('foto', fotoCierre)
     try {
       const res = await fetch(`/api/tickets/${modalCerrar.id}/cerrar`, { method: 'POST', body: fd })
       const data = await res.json()
@@ -269,7 +270,7 @@ export default function AdminPage() {
               <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}
                 className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227]">
                 <option value="">Todas las categorías</option>
-                {['Ascensor', 'Iluminación', 'Estructura', 'Pintura', 'Limpieza', 'Otros'].map((c) => <option key={c}>{c}</option>)}
+                {['Obra / Pintura', 'Ascensor', 'Iluminación', 'Estructura', 'Limpieza', 'Otros'].map((c) => <option key={c}>{c}</option>)}
               </select>
               <select value={filtroPrioridad} onChange={(e) => setFiltroPrioridad(e.target.value)}
                 className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227]">
@@ -420,7 +421,10 @@ export default function AdminPage() {
                     <div><span className="text-gray-500">Vecino:</span> <span className="font-medium">{ticketDetalle.vecino}</span></div>
                     <div><span className="text-gray-500">Email:</span> <span className="font-medium break-all">{ticketDetalle.emailVecino}</span></div>
                     <div><span className="text-gray-500">Teléfono:</span> <span className="font-medium">{ticketDetalle.telefonoVecino || '—'}</span></div>
-                    <div><span className="text-gray-500">Zona:</span> <span className="font-medium">{ticketDetalle.zona}{ticketDetalle.piso ? ` · ${ticketDetalle.piso}` : ''}</span></div>
+                    <div><span className="text-gray-500">Zona:</span> <span className="font-medium">{ticketDetalle.zona}</span></div>
+                    {(ticketDetalle.calle || ticketDetalle.bloque || ticketDetalle.piso) && (
+                      <div><span className="text-gray-500">Ubicación:</span> <span className="font-medium">{[ticketDetalle.calle, ticketDetalle.bloque, ticketDetalle.piso].filter(Boolean).join(' · ')}</span></div>
+                    )}
                     <div><span className="text-gray-500">Creado:</span> <span className="font-medium">{new Date(ticketDetalle.creadoEn).toLocaleString('es-ES')}</span></div>
                     {ticketDetalle.cerradoEn && <div><span className="text-gray-500">Cerrado:</span> <span className="font-medium">{new Date(ticketDetalle.cerradoEn).toLocaleString('es-ES')}</span></div>}
                     {ticketDetalle.cerradoPor && <div><span className="text-gray-500">Cerrado por:</span> <span className="font-medium">{ticketDetalle.cerradoPor}</span></div>}
@@ -596,7 +600,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Foto de resolución <span className="text-red-500">*</span>
+                  Foto de resolución (opcional)
                 </label>
                 <input type="file" accept="image/*" onChange={(e) => setFotoCierre(e.target.files?.[0] || null)}
                   className="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#FBF3DA] file:text-[#8B6914] hover:file:bg-[#F5E9C0]" />
