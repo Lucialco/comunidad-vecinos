@@ -111,6 +111,7 @@ type TicketProgreso = {
   zona: string
   categoria: string
   afectados?: PersonaContact[]
+  fotoUrl?: string | null
 }
 
 type TicketCierre = {
@@ -218,6 +219,10 @@ export async function sendProgresoEmail(ticket: TicketProgreso) {
 
   const waComunLink = `https://wa.me/${waComun}?text=${encodeURIComponent(`Ticket #${ticket.numero} en gestión`)}`
 
+  const fotoProgresoHtml = ticket.fotoUrl
+    ? `<p style="margin-top:12px"><img src="${ticket.fotoUrl}" alt="Foto" style="max-width:400px;border-radius:8px;border:1px solid #e5e7eb"/></p>`
+    : ''
+
   const htmlBody = (nombre: string) => `<div style="font-family:sans-serif;max-width:600px">
     <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:16px;margin-bottom:20px;border-radius:4px">
       <h2 style="color:#92400e;margin:0 0 8px 0">Su incidencia está siendo gestionada</h2>
@@ -231,6 +236,7 @@ export async function sendProgresoEmail(ticket: TicketProgreso) {
       <p style="font-weight:600;color:#78350f;margin:0 0 6px">Nota del administrador:</p>
       <p style="color:#451a03;margin:0;font-size:14px">${ticket.comentario}</p>
     </div>
+    ${fotoProgresoHtml}
     <p style="margin-top:20px"><a href="${waComunLink}" style="color:#16a34a;font-size:14px">Contactar a la administración por WhatsApp</a></p>
   </div>`
 

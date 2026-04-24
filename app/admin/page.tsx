@@ -81,10 +81,14 @@ export default function AdminPage() {
 
   // Modal "Cerrar"
   const [modalCerrar, setModalCerrar] = useState<Ticket | null>(null)
+  const [cerrarModo, setCerrarModo] = useState<'directo' | 'normal'>('normal')
   const [comentarioCierre, setComentarioCierre] = useState('')
   const [fotoCierre, setFotoCierre] = useState<File | null>(null)
   const [cerrando, setCerrando] = useState(false)
   const [errorCierre, setErrorCierre] = useState('')
+
+  // Modal "En progreso" — foto
+  const [fotoProgreso, setFotoProgreso] = useState<File | null>(null)
 
   const cargarTickets = useCallback(async () => {
     setCargando(true)
@@ -124,14 +128,15 @@ export default function AdminPage() {
     if (!comentarioProgreso.trim()) { setErrorProgreso('El comentario es obligatorio'); return }
     setMarcandoProgreso(true); setErrorProgreso('')
     try {
-      const res = await fetch(`/api/tickets/${modalProgreso.id}/progreso`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comentario: comentarioProgreso, autor: 'Administrador' }),
-      })
+      const fd = new FormData()
+      fd.append('comentario', comentarioProgreso)
+      fd.append('autor', 'Administrador')
+      if (fotoProgreso) fd.append('foto', fotoProgreso)
+      const res = await fetch(`/api/tickets/${modalProgreso.id}/progreso`, { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error')
-      setModalProgreso(null); setComentarioProgreso(''); setTicketDetalle(null); setDetalleCompleto(null)
+      setModalProgreso(null); setComentarioProgreso(''); setFotoProgreso(null)
+      setTicketDetalle(null); setDetalleCompleto(null)
       cargarTickets()
     } catch (err: unknown) {
       setErrorProgreso(err instanceof Error ? err.message : 'Error')
@@ -150,7 +155,7 @@ export default function AdminPage() {
       const res = await fetch(`/api/tickets/${modalCerrar.id}/cerrar`, { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error')
-      setModalCerrar(null); setComentarioCierre(''); setFotoCierre(null)
+      setModalCerrar(null); setComentarioCierre(''); setFotoCierre(null); setCerrarModo('normal')
       setTicketDetalle(null); setDetalleCompleto(null)
       cargarTickets()
     } catch (err: unknown) {
@@ -350,13 +355,19 @@ export default function AdminPage() {
                       </span>
                     )}
                     {ticket.estado === 'Abierto' && (
-                      <button onClick={(e) => { e.stopPropagation(); setModalProgreso(ticket); setErrorProgreso('') }}
-                        className="text-xs bg-yellow-50 text-yellow-700 px-2.5 py-1.5 rounded-lg hover:bg-yellow-100 transition-colors font-medium whitespace-nowrap">
-                        En progreso
-                      </button>
+                      <>
+                        <button onClick={(e) => { e.stopPropagation(); setModalProgreso(ticket); setErrorProgreso('') }}
+                          className="text-xs bg-yellow-50 text-yellow-700 px-2.5 py-1.5 rounded-lg hover:bg-yellow-100 transition-colors font-medium whitespace-nowrap">
+                          En progreso
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setCerrarModo('directo'); setModalCerrar(ticket); setErrorCierre('') }}
+                          className="text-xs bg-red-50 text-red-700 px-2.5 py-1.5 rounded-lg hover:bg-red-100 transition-colors font-medium whitespace-nowrap">
+                          Cerrar
+                        </button>
+                      </>
                     )}
                     {ticket.estado === 'En progreso' && (
-                      <button onClick={(e) => { e.stopPropagation(); setModalCerrar(ticket); setErrorCierre('') }}
+                      <button onClick={(e) => { e.stopPropagation(); setCerrarModo('normal'); setModalCerrar(ticket); setErrorCierre('') }}
                         className="text-xs bg-red-50 text-red-700 px-2.5 py-1.5 rounded-lg hover:bg-red-100 transition-colors font-medium">
                         Cerrar
                       </button>
@@ -499,13 +510,19 @@ export default function AdminPage() {
                   {/* Botones de acción */}
                   <div className="flex flex-col sm:flex-row gap-3 pt-2">
                     {ticketDetalle.estado === 'Abierto' && (
-                      <button onClick={() => { setModalProgreso(ticketDetalle); setErrorProgreso('') }}
-                        className="flex-1 bg-yellow-500 text-white py-2.5 rounded-xl font-semibold hover:bg-yellow-600 transition-colors text-sm sm:text-base">
-                        Marcar en progreso
-                      </button>
+                      <>
+                        <button onClick={() => { setModalProgreso(ticketDetalle); setErrorProgreso('') }}
+                          className="flex-1 bg-yellow-500 text-white py-2.5 rounded-xl font-semibold hover:bg-yellow-600 transition-colors text-sm sm:text-base">
+                          Marcar en progreso
+                        </button>
+                        <button onClick={() => { setCerrarModo('directo'); setModalCerrar(ticketDetalle); setErrorCierre('') }}
+                          className="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold hover:bg-red-700 transition-colors text-sm sm:text-base">
+                          Cerrar directamente
+                        </button>
+                      </>
                     )}
                     {ticketDetalle.estado === 'En progreso' && (
-                      <button onClick={() => { setModalCerrar(ticketDetalle); setErrorCierre('') }}
+                      <button onClick={() => { setCerrarModo('normal'); setModalCerrar(ticketDetalle); setErrorCierre('') }}
                         className="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold hover:bg-red-700 transition-colors text-sm sm:text-base">
                         Cerrar ticket
                       </button>
@@ -559,17 +576,24 @@ export default function AdminPage() {
             {errorProgreso && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{errorProgreso}</div>
             )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Comentario para el vecino <span className="text-red-500">*</span>
-              </label>
-              <textarea value={comentarioProgreso} onChange={(e) => setComentarioProgreso(e.target.value)}
-                rows={3} placeholder="Ej: Avisado técnico del ascensor, vendrá el martes 23..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none" />
-              <p className="text-xs text-gray-400 mt-1">Este comentario se enviará al vecino y al presidente por email.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Comentario para el vecino <span className="text-red-500">*</span>
+                </label>
+                <textarea value={comentarioProgreso} onChange={(e) => setComentarioProgreso(e.target.value)}
+                  rows={3} placeholder="Ej: Avisado técnico del ascensor, vendrá el martes 23..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-none" />
+                <p className="text-xs text-gray-400 mt-1">Este comentario se enviará al vecino y al presidente por email.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Foto (opcional)</label>
+                <input type="file" accept="image/*" onChange={(e) => setFotoProgreso(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100" />
+              </div>
             </div>
             <div className="flex gap-3 mt-4">
-              <button onClick={() => { setModalProgreso(null); setComentarioProgreso(''); setErrorProgreso('') }}
+              <button onClick={() => { setModalProgreso(null); setComentarioProgreso(''); setFotoProgreso(null); setErrorProgreso('') }}
                 className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">Cancelar</button>
               <button onClick={marcarProgreso} disabled={marcandoProgreso}
                 className="flex-1 bg-yellow-500 text-white py-2.5 rounded-xl font-semibold hover:bg-yellow-600 transition-colors disabled:opacity-50 text-sm">
@@ -584,18 +608,28 @@ export default function AdminPage() {
       {modalCerrar && (
         <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4 z-[60]">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-w-md w-full p-4 sm:p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Cerrar ticket #{modalCerrar.numero}</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">
+              {cerrarModo === 'directo' ? 'Cerrar directamente' : 'Cerrar ticket'} #{modalCerrar.numero}
+            </h3>
             <p className="text-sm text-gray-500 mb-4">{modalCerrar.titulo}</p>
+            {cerrarModo === 'directo' && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
+                El ticket pasará directamente a <strong>Cerrado</strong>. Se notificará a todos los afectados con enlace de valoración.
+              </div>
+            )}
             {errorCierre && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{errorCierre}</div>
             )}
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Comentario de resolución <span className="text-red-500">*</span>
+                  {cerrarModo === 'directo' ? 'Explique qué acción se realizó' : 'Comentario de resolución'} <span className="text-red-500">*</span>
                 </label>
                 <textarea value={comentarioCierre} onChange={(e) => setComentarioCierre(e.target.value)}
-                  rows={3} placeholder="Describa cómo se resolvió la incidencia..."
+                  rows={3}
+                  placeholder={cerrarModo === 'directo'
+                    ? 'Describa detalladamente qué acción se realizó para resolver la incidencia...'
+                    : 'Describa cómo se resolvió la incidencia...'}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227] resize-none" />
               </div>
               <div>
@@ -607,7 +641,7 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={() => { setModalCerrar(null); setComentarioCierre(''); setFotoCierre(null); setErrorCierre('') }}
+              <button onClick={() => { setModalCerrar(null); setComentarioCierre(''); setFotoCierre(null); setCerrarModo('normal'); setErrorCierre('') }}
                 className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl hover:bg-gray-50 transition-colors text-sm">Cancelar</button>
               <button onClick={cerrarTicket} disabled={cerrando}
                 className="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 text-sm">

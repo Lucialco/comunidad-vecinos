@@ -105,6 +105,11 @@ function LoginForm() {
                 'Entrar'
               )}
             </button>
+            <div className="text-center mt-3">
+              <a href="/reset-password" className="text-sm text-gray-400 hover:text-[#C9A227] transition-colors">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
           </form>
         </div>
 

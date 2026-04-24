@@ -72,10 +72,12 @@ model Comunicacion {
 }
 
 model Usuario {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  nombre    String
-  rol       String
-  creadoEn  DateTime @default(now())
+  id               String    @id @default(cuid())
+  email            String    @unique
+  password         String
+  nombre           String
+  rol              String
+  creadoEn         DateTime  @default(now())
+  resetToken       String?
+  resetTokenExpiry DateTime?
 }
