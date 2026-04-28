@@ -42,8 +42,9 @@ export default function Home() {
 
   useEffect(() => {
     if (status === 'loading') return
-    if (userRole === 'admin') router.push('/admin')
-    else if (userRole === 'presidente') router.push('/presidente')
+    const role = userRole?.toLowerCase()
+    if (role === 'admin') router.push('/admin')
+    else if (role === 'presidente') router.push('/presidente')
   }, [status, userRole, router])
 
   const [form, setForm] = useState<FormState>({
@@ -239,7 +240,8 @@ export default function Home() {
     )
   }
 
-  if (status === 'loading' || userRole === 'admin' || userRole === 'presidente') {
+  const roleLower = userRole?.toLowerCase()
+  if (status === 'loading' || roleLower === 'admin' || roleLower === 'presidente') {
     return (
       <div className="min-h-screen bg-[#fffdf5] flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-[#D4A017] border-t-transparent rounded-full animate-spin" />
