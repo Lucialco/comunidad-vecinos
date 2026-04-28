@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 type Comentario = { id: string; texto: string; autor: string; rol: string; creadoEn: string }
 type Afectado = { id: string; nombre: string; email: string }
@@ -86,6 +86,25 @@ export default function PresidentePage() {
   const [filtroDesde, setFiltroDesde] = useState('')
   const [filtroHasta, setFiltroHasta] = useState('')
 
+  // Config section
+  const [vistaActual, setVistaActual] = useState<'dashboard' | 'config'>('dashboard')
+  const [configTab, setConfigTab] = useState<'general' | 'usuarios' | 'vecinos' | 'logs'>('general')
+  const [configVals, setConfigVals] = useState<Record<string, string>>({
+    nombreComunidad: 'Parcela 8', emailAdmin: '', whatsapp: '', emailPresidente: '',
+  })
+  const [savingConfig, setSavingConfig] = useState(false)
+  const [configMsg, setConfigMsg] = useState('')
+  const [usuariosAdmin, setUsuariosAdmin] = useState<{ id: string; nombre: string; email: string; rol: string; activo: boolean }[]>([])
+  const [changePassId, setChangePassId] = useState<string | null>(null)
+  const [newPass, setNewPass] = useState('')
+  const [savingPass, setSavingPass] = useState(false)
+  const [passMsg, setPassMsg] = useState('')
+  const [vecinosData, setVecinosData] = useState<{ nombre: string; email: string; telefono?: string | null; count: number }[]>([])
+  const [logsData, setLogsData] = useState<{ id: string; usuario: string; accion: string; detalle?: string; creadoEn: string }[]>([])
+  const [anonEmail, setAnonEmail] = useState('')
+  const [anonMsg, setAnonMsg] = useState('')
+  const [cargandoConfig, setCargandoConfig] = useState(false)
+
   useEffect(() => {
     setCargando(true)
     const params = new URLSearchParams()
@@ -165,6 +184,86 @@ export default function PresidentePage() {
     const [year, month] = key.split('-')
     const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     return `${meses[parseInt(month) - 1]} ${year.slice(2)}`
+  }
+
+  const cargarConfigData = useCallback(async () => {
+    setCargandoConfig(true)
+    try {
+      const [cfgRes, usrRes, vecRes, logRes] = await Promise.all([
+        fetch('/api/admin/config'),
+        fetch('/api/admin/usuarios'),
+        fetch('/api/admin/vecinos'),
+        fetch('/api/admin/logs'),
+      ])
+      const cfg = await cfgRes.json()
+      const usr = await usrRes.json()
+      const vec = await vecRes.json()
+      const log = await logRes.json()
+      if (Array.isArray(cfg)) {
+        const vals: Record<string, string> = {}
+        cfg.forEach((c: { clave: string; valor: string }) => { vals[c.clave] = c.valor })
+        setConfigVals(prev => ({ ...prev, ...vals }))
+      }
+      if (Array.isArray(usr)) setUsuariosAdmin(usr)
+      if (Array.isArray(vec)) setVecinosData(vec)
+      if (Array.isArray(log)) setLogsData(log)
+    } catch (e) { console.error(e) }
+    finally { setCargandoConfig(false) }
+  }, [])
+
+  async function guardarConfig() {
+    setSavingConfig(true); setConfigMsg('')
+    try {
+      const values = Object.entries(configVals).map(([clave, valor]) => ({ clave, valor }))
+      const res = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values }),
+      })
+      if (!res.ok) throw new Error('Error')
+      setConfigMsg('Configuración guardada correctamente')
+    } catch { setConfigMsg('Error al guardar la configuración') }
+    finally { setSavingConfig(false) }
+  }
+
+  async function cambiarPassword() {
+    if (!changePassId || newPass.length < 6) { setPassMsg('Mínimo 6 caracteres'); return }
+    setSavingPass(true); setPassMsg('')
+    try {
+      const res = await fetch(`/api/admin/usuarios/${changePassId}/password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPass }),
+      })
+      if (!res.ok) throw new Error('Error')
+      setChangePassId(null); setNewPass('')
+      await cargarConfigData()
+    } catch { setPassMsg('Error al cambiar contraseña') }
+    finally { setSavingPass(false) }
+  }
+
+  async function toggleUsuario(id: string) {
+    try {
+      await fetch(`/api/admin/usuarios/${id}/toggle`, { method: 'POST' })
+      await cargarConfigData()
+    } catch (e) { console.error(e) }
+  }
+
+  async function anonimizarVecino() {
+    if (!anonEmail) return
+    if (!confirm(`¿Anonimizar todos los datos del vecino "${anonEmail}"? Esta acción es irreversible.`)) return
+    setAnonMsg('')
+    try {
+      const res = await fetch('/api/admin/rgpd/anonimizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: anonEmail }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error')
+      setAnonMsg(`Vecino anonimizado correctamente`); setAnonEmail('')
+      await cargarConfigData()
+    } catch (err: unknown) { setAnonMsg(err instanceof Error ? err.message : 'Error') }
   }
 
   async function exportarPDF() {
@@ -262,6 +361,14 @@ export default function PresidentePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
               Exportar PDF
+            </button>
+            <button onClick={() => { setVistaActual('config'); setConfigTab('general'); cargarConfigData() }}
+              className="flex items-center gap-1.5 text-sm bg-slate-700 text-white px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors whitespace-nowrap">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Configuración
             </button>
           </div>
         </div>
@@ -488,6 +595,201 @@ export default function PresidentePage() {
           </div>
         )}
       </div>
+
+      <div className="mt-8 py-4 border-t border-slate-200 text-center">
+        <p className="text-xs text-gray-400">
+          Datos protegidos según RGPD · Comunidad Parcela 8 ·{' '}
+          <a href="/privacidad" className="hover:underline">Política de privacidad</a>
+        </p>
+      </div>
+
+      {/* ---- CONFIGURACIÓN OVERLAY ---- */}
+      {vistaActual === 'config' && (
+        <div className="fixed inset-0 bg-slate-50 overflow-y-auto z-40">
+          <div className="max-w-4xl mx-auto px-4 py-6">
+            <div className="flex items-center gap-4 mb-6">
+              <button onClick={() => setVistaActual('dashboard')}
+                className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Volver al dashboard
+              </button>
+              <h1 className="text-xl font-bold text-gray-900">Configuración</h1>
+            </div>
+
+            {/* Sub-tabs */}
+            <div className="flex gap-1 mb-6 bg-white border border-slate-200 rounded-xl p-1">
+              {([['general', 'General'], ['usuarios', 'Usuarios'], ['vecinos', 'Vecinos / RGPD'], ['logs', 'Actividad']] as const).map(([tab, label]) => (
+                <button key={tab} onClick={() => setConfigTab(tab)}
+                  className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-colors ${configTab === tab ? 'bg-slate-700 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {cargandoConfig && (
+              <div className="flex justify-center py-12">
+                <div className="w-8 h-8 border-4 border-[#C9A227] border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!cargandoConfig && configTab === 'general' && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                <h2 className="font-semibold text-gray-900 mb-4">Datos de la comunidad</h2>
+                <div className="space-y-4">
+                  {[
+                    { clave: 'nombreComunidad', label: 'Nombre de la comunidad' },
+                    { clave: 'emailAdmin', label: 'Email del administrador de fincas' },
+                    { clave: 'whatsapp', label: 'Teléfono WhatsApp (con prefijo, ej: 34680207244)' },
+                    { clave: 'emailPresidente', label: 'Email del presidente' },
+                  ].map(({ clave, label }) => (
+                    <div key={clave}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                      <input
+                        type="text"
+                        value={configVals[clave] || ''}
+                        onChange={(e) => setConfigVals(prev => ({ ...prev, [clave]: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227]"
+                      />
+                    </div>
+                  ))}
+                </div>
+                {configMsg && (
+                  <div className={`mt-4 p-3 rounded-lg text-sm ${configMsg.includes('Error') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                    {configMsg}
+                  </div>
+                )}
+                <button onClick={guardarConfig} disabled={savingConfig}
+                  className="mt-6 bg-[#C9A227] text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-[#A07D1A] transition-colors disabled:opacity-50">
+                  {savingConfig ? 'Guardando...' : 'Guardar configuración'}
+                </button>
+              </div>
+            )}
+
+            {!cargandoConfig && configTab === 'usuarios' && (
+              <div className="space-y-4">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                  <h2 className="font-semibold text-gray-900 mb-4">Usuarios del sistema ({usuariosAdmin.length})</h2>
+                  <div className="space-y-3">
+                    {usuariosAdmin.map((u) => (
+                      <div key={u.id} className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{u.nombre}</p>
+                          <p className="text-xs text-gray-500">{u.email} · <span className="capitalize">{u.rol}</span></p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${u.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {u.activo ? 'Activo' : 'Inactivo'}
+                          </span>
+                          <button onClick={() => toggleUsuario(u.id)}
+                            className="text-xs border border-gray-300 text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors">
+                            {u.activo ? 'Desactivar' : 'Activar'}
+                          </button>
+                          <button onClick={() => { setChangePassId(u.id); setNewPass(''); setPassMsg('') }}
+                            className="text-xs bg-slate-700 text-white px-2 py-1 rounded-lg hover:bg-slate-800 transition-colors">
+                            Contraseña
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {changePassId && (
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                    <h3 className="font-semibold text-gray-900 mb-3">
+                      Cambiar contraseña — {usuariosAdmin.find(u => u.id === changePassId)?.nombre}
+                    </h3>
+                    <div className="flex gap-3">
+                      <input type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)}
+                        placeholder="Nueva contraseña (mín. 6 caracteres)"
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A227]" />
+                      <button onClick={cambiarPassword} disabled={savingPass}
+                        className="bg-[#C9A227] text-white px-4 py-2 rounded-lg font-semibold hover:bg-[#A07D1A] transition-colors disabled:opacity-50 text-sm">
+                        {savingPass ? 'Guardando...' : 'Guardar'}
+                      </button>
+                      <button onClick={() => { setChangePassId(null); setNewPass(''); setPassMsg('') }}
+                        className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm">
+                        Cancelar
+                      </button>
+                    </div>
+                    {passMsg && <p className="mt-2 text-sm text-red-600">{passMsg}</p>}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!cargandoConfig && configTab === 'vecinos' && (
+              <div className="space-y-4">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                  <h2 className="font-semibold text-gray-900 mb-4">Vecinos registrados ({vecinosData.length})</h2>
+                  <div className="space-y-2">
+                    {vecinosData.map((v) => (
+                      <div key={v.email} className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{v.nombre}</p>
+                          <p className="text-xs text-gray-500">{v.email}{v.telefono ? ` · ${v.telefono}` : ''}</p>
+                        </div>
+                        <span className="text-xs bg-[#FBF3DA] text-[#8B6914] px-2 py-0.5 rounded-full font-medium flex-shrink-0">
+                          {v.count} incidencia{v.count !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    ))}
+                    {vecinosData.length === 0 && <p className="text-gray-400 text-sm">Sin vecinos registrados</p>}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-red-200 p-6">
+                  <h2 className="font-semibold text-red-800 mb-1">Derecho al olvido (RGPD Art. 17)</h2>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Anonimiza todos los datos personales de un vecino (nombre, email, teléfono) manteniendo el historial de incidencias.
+                    Esta acción es <strong>irreversible</strong>.
+                  </p>
+                  <div className="flex gap-3">
+                    <input type="email" value={anonEmail} onChange={(e) => setAnonEmail(e.target.value)}
+                      placeholder="email@del.vecino.com"
+                      className="flex-1 border border-red-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400" />
+                    <button onClick={anonimizarVecino} disabled={!anonEmail}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-40 text-sm whitespace-nowrap">
+                      Anonimizar
+                    </button>
+                  </div>
+                  {anonMsg && (
+                    <div className={`mt-3 p-3 rounded-lg text-sm ${anonMsg.includes('Error') || anonMsg.includes('error') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+                      {anonMsg}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!cargandoConfig && configTab === 'logs' && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                <h2 className="font-semibold text-gray-900 mb-4">Registro de actividad ({logsData.length})</h2>
+                {logsData.length === 0 ? (
+                  <p className="text-gray-400 text-sm">Sin registros de actividad</p>
+                ) : (
+                  <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                    {logsData.map((log) => (
+                      <div key={log.id} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl text-sm">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-gray-800">{log.usuario}</span>
+                            <span className="text-xs bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-mono">{log.accion}</span>
+                          </div>
+                          {log.detalle && <p className="text-xs text-gray-500 mt-0.5 truncate">{log.detalle}</p>}
+                        </div>
+                        <span className="text-xs text-gray-400 flex-shrink-0">{new Date(log.creadoEn).toLocaleString('es-ES')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ---- MODAL DETALLE ---- */}
       {ticketDetalle && (

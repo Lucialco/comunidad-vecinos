@@ -2,6 +2,7 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import type { NextAuthOptions } from 'next-auth'
 import { prisma } from './prisma'
+import { logActividad } from './log'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -22,7 +23,9 @@ export const authOptions: NextAuthOptions = {
 
           const valid = await bcrypt.compare(credentials.password, usuario.password)
           if (!valid) return null
+          if (!usuario.activo) return null
 
+          logActividad(usuario.email, 'login', 'Login exitoso').catch(console.error)
           return { id: usuario.id, email: usuario.email, name: usuario.nombre, role: usuario.rol }
         } catch (err) {
           console.error('[NextAuth authorize error]', err)

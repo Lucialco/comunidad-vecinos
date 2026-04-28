@@ -2,6 +2,11 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
 
+type TicketRow = { id: string; numero: number; titulo: string; descripcion: string; categoria: string; zona: string; estado: string; creadoEn: Date; afectados: { id: string }[] }
+function sanitizar(t: TicketRow) {
+  return { id: t.id, numero: t.numero, titulo: t.titulo, descripcion: t.descripcion, categoria: t.categoria, zona: t.zona, estado: t.estado, creadoEn: t.creadoEn, afectados: t.afectados.length }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
@@ -40,10 +45,10 @@ export async function GET(request: NextRequest) {
             t.descripcion.toLowerCase().includes(term)
         )
       )
-      return Response.json(filtrados.slice(0, 5))
+      return Response.json(filtrados.slice(0, 5).map(sanitizar))
     }
 
-    return Response.json(allTickets.slice(0, 5))
+    return Response.json(allTickets.slice(0, 5).map(sanitizar))
   } catch (error) {
     console.error(error)
     return Response.json({ error: 'Error buscando similares' }, { status: 500 })

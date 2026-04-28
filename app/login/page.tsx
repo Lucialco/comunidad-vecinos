@@ -114,7 +114,8 @@ function LoginForm() {
         </div>
 
         <p className="text-center text-xs text-stone-400 mt-6">
-          Comunidad Parcela 8 © 2025
+          Datos protegidos según RGPD · Comunidad Parcela 8 ·{' '}
+          <a href="/privacidad" className="hover:underline">Política de privacidad</a>
         </p>
       </div>
     </div>

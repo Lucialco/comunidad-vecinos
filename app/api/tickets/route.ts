@@ -3,8 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { sendTicketEmail } from '@/lib/email'
 import { put } from '@vercel/blob'
 import type { Prisma } from '@prisma/client'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session) return Response.json({ error: 'No autorizado' }, { status: 401 })
+
   try {
     const { searchParams } = request.nextUrl
     const estado = searchParams.get('estado')

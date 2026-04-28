@@ -77,7 +77,24 @@ model Usuario {
   password         String
   nombre           String
   rol              String
+  activo           Boolean   @default(true)
   creadoEn         DateTime  @default(now())
   resetToken       String?
   resetTokenExpiry DateTime?
+}
+
+model Configuracion {
+  id            String   @id @default(cuid())
+  clave         String   @unique
+  valor         String
+  actualizadoEn DateTime @updatedAt
+}
+
+model LogActividad {
+  id       String   @id @default(cuid())
+  usuario  String
+  accion   String
+  detalle  String?
+  ip       String?
+  creadoEn DateTime @default(now())
 }

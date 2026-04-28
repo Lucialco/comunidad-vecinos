@@ -15,7 +15,7 @@ type TicketSimilar = {
   zona: string
   estado: string
   creadoEn: string
-  afectados: Array<{ nombre: string; email: string }>
+  afectados: number
 }
 
 type FormState = {
@@ -55,6 +55,7 @@ export default function Home() {
   const [enviando, setEnviando] = useState(false)
   const [exito, setExito] = useState<{ numero: number } | null>(null)
   const [error, setError] = useState('')
+  const [privacidadAceptada, setPrivacidadAceptada] = useState(false)
 
   const [modalUnirse, setModalUnirse] = useState<TicketSimilar | null>(null)
   const [uniendose, setUniendose] = useState(false)
@@ -121,6 +122,12 @@ export default function Home() {
     if (form.telefono) fd.append('telefonoVecino', form.telefono)
     if (form.foto) fd.append('foto', form.foto)
 
+    if (!privacidadAceptada) {
+      setError('Debe aceptar la política de privacidad para continuar')
+      setEnviando(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/tickets', { method: 'POST', body: fd })
       const data = await res.json()
@@ -130,6 +137,7 @@ export default function Home() {
         vecino: '', email: '', telefono: '', categoria: '', prioridad: 'Normal',
         zona: '', calle: '', bloque: '', piso: '', titulo: '', descripcion: '', foto: null,
       })
+      setPrivacidadAceptada(false)
       setSimilares([])
       setMostrarSimilares(false)
     } catch (err: unknown) {
@@ -251,7 +259,7 @@ export default function Home() {
                           <div>
                             <span className="text-xs font-mono text-gray-400">#{t.numero}</span>
                             <p className="text-sm font-medium text-gray-800">{t.titulo}</p>
-                            <p className="text-xs text-gray-500">{t.categoria} · {t.zona} · {t.afectados.length + 1} afectados</p>
+                            <p className="text-xs text-gray-500">{t.categoria} · {t.zona} · {t.afectados + 1} afectados</p>
                           </div>
                           <button
                             type="button"
@@ -447,6 +455,20 @@ export default function Home() {
               )}
             </div>
 
+            <div className="flex items-start gap-3 p-4 bg-stone-50 border border-stone-200 rounded-xl">
+              <input
+                type="checkbox"
+                id="privacidad"
+                checked={privacidadAceptada}
+                onChange={(e) => setPrivacidadAceptada(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#C9A227] flex-shrink-0"
+              />
+              <label htmlFor="privacidad" className="text-xs text-gray-600 leading-relaxed">
+                Acepto el tratamiento de mis datos personales para la gestión de incidencias de la comunidad según el RGPD (Reglamento UE 2016/679).{' '}
+                <a href="/privacidad" target="_blank" className="text-[#C9A227] underline hover:text-[#A07D1A]">Ver política de privacidad</a>
+              </label>
+            </div>
+
             <button
               type="submit"
               disabled={enviando}
@@ -462,6 +484,14 @@ export default function Home() {
               )}
             </button>
           </form>
+        </div>
+        <div className="mt-6 pt-4 border-t border-stone-100 text-center">
+          <p className="text-xs text-gray-400">
+            Datos protegidos según RGPD · Comunidad Parcela 8 ·{' '}
+            <a href="/privacidad" className="hover:underline">Política de privacidad</a>
+            {' '}·{' '}
+            <a href="/mis-incidencias" className="hover:underline">Mis incidencias</a>
+          </p>
         </div>
       </div>
 

@@ -380,6 +380,13 @@ export default function AdminPage() {
         )}
       </div>
 
+      <div className="mt-8 py-4 border-t border-slate-200 text-center">
+        <p className="text-xs text-gray-400">
+          Datos protegidos según RGPD · Comunidad Parcela 8 ·{' '}
+          <a href="/privacidad" className="hover:underline">Política de privacidad</a>
+        </p>
+      </div>
+
       {/* ---- MODAL DETALLE ---- */}
       {ticketDetalle && (
         <div className="fixed inset-0 bg-black/50 flex items-start justify-center p-2 sm:p-4 z-50 overflow-y-auto">
