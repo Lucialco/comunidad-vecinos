@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 
 const CATEGORIAS = ['Obra / Pintura', 'Ascensor', 'Iluminación', 'Estructura', 'Limpieza', 'Otros']
 const PRIORIDADES = ['Baja', 'Normal', 'Alta', 'Urgente']
@@ -34,6 +36,9 @@ type FormState = {
 }
 
 export default function Home() {
+  const { data: session } = useSession()
+  const userRole = (session?.user as { role?: string })?.role
+
   const [form, setForm] = useState<FormState>({
     vecino: '',
     email: '',
@@ -222,6 +227,32 @@ export default function Home() {
           >
             Volver al inicio
           </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (userRole === 'admin' || userRole === 'presidente') {
+    const panelHref = userRole === 'admin' ? '/admin' : '/presidente'
+    const panelLabel = userRole === 'admin' ? 'Panel Administrador' : 'Panel Presidente'
+    return (
+      <div className="min-h-screen bg-[#fffdf5] flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-10 max-w-sm w-full text-center">
+          <div className="w-14 h-14 bg-[#FBF3DA] rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-[#D4A017]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            </svg>
+          </div>
+          <p className="text-sm text-gray-500 mb-1">Sesión iniciada como</p>
+          <p className="font-bold text-gray-900 text-lg mb-1">{session?.user?.name}</p>
+          <p className="text-xs text-[#D4A017] font-medium uppercase tracking-wide mb-6 capitalize">{userRole}</p>
+          <Link href={panelHref}
+            className="block w-full bg-[#D4A017] text-white py-3 rounded-xl font-semibold hover:bg-[#b8880f] transition-colors mb-3">
+            {panelLabel}
+          </Link>
+          <p className="text-xs text-gray-400 mt-4">
+            El formulario de incidencias es solo para vecinos.
+          </p>
         </div>
       </div>
     )

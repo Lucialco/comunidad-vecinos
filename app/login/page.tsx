@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Suspense } from 'react'
@@ -32,7 +32,11 @@ function LoginForm() {
     if (result?.error) {
       setError('Email o contraseña incorrectos')
     } else {
-      router.push(callbackUrl)
+      const session = await getSession()
+      const role = (session?.user as { role?: string })?.role
+      if (role === 'admin') router.push('/admin')
+      else if (role === 'presidente') router.push('/presidente')
+      else router.push(callbackUrl)
       router.refresh()
     }
   }

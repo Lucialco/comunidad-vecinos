@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
       include: {
         comentarios: { orderBy: { creadoEn: 'asc' } },
         afectados: true,
+        _count: { select: { comunicaciones: true } },
       },
       orderBy: { creadoEn: 'desc' },
     })
