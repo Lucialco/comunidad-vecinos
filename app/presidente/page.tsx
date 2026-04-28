@@ -116,6 +116,31 @@ export default function PresidentePage() {
       .catch(() => setCargando(false))
   }, [filtroDesde, filtroHasta])
 
+  const cargarConfigData = useCallback(async () => {
+    setCargandoConfig(true)
+    try {
+      const [cfgRes, usrRes, vecRes, logRes] = await Promise.all([
+        fetch('/api/admin/config'),
+        fetch('/api/admin/usuarios'),
+        fetch('/api/admin/vecinos'),
+        fetch('/api/admin/logs'),
+      ])
+      const cfg = await cfgRes.json()
+      const usr = await usrRes.json()
+      const vec = await vecRes.json()
+      const log = await logRes.json()
+      if (Array.isArray(cfg)) {
+        const vals: Record<string, string> = {}
+        cfg.forEach((c: { clave: string; valor: string }) => { vals[c.clave] = c.valor })
+        setConfigVals(prev => ({ ...prev, ...vals }))
+      }
+      if (Array.isArray(usr)) setUsuariosAdmin(usr)
+      if (Array.isArray(vec)) setVecinosData(vec)
+      if (Array.isArray(log)) setLogsData(log)
+    } catch (e) { console.error(e) }
+    finally { setCargandoConfig(false) }
+  }, [])
+
   function abrirDetalle(ticket: Ticket) {
     setTicketDetalle(ticket)
     setTabDetalle('info')
@@ -185,31 +210,6 @@ export default function PresidentePage() {
     const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     return `${meses[parseInt(month) - 1]} ${year.slice(2)}`
   }
-
-  const cargarConfigData = useCallback(async () => {
-    setCargandoConfig(true)
-    try {
-      const [cfgRes, usrRes, vecRes, logRes] = await Promise.all([
-        fetch('/api/admin/config'),
-        fetch('/api/admin/usuarios'),
-        fetch('/api/admin/vecinos'),
-        fetch('/api/admin/logs'),
-      ])
-      const cfg = await cfgRes.json()
-      const usr = await usrRes.json()
-      const vec = await vecRes.json()
-      const log = await logRes.json()
-      if (Array.isArray(cfg)) {
-        const vals: Record<string, string> = {}
-        cfg.forEach((c: { clave: string; valor: string }) => { vals[c.clave] = c.valor })
-        setConfigVals(prev => ({ ...prev, ...vals }))
-      }
-      if (Array.isArray(usr)) setUsuariosAdmin(usr)
-      if (Array.isArray(vec)) setVecinosData(vec)
-      if (Array.isArray(log)) setLogsData(log)
-    } catch (e) { console.error(e) }
-    finally { setCargandoConfig(false) }
-  }, [])
 
   async function guardarConfig() {
     setSavingConfig(true); setConfigMsg('')
